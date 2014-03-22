@@ -51,7 +51,7 @@ abstract class TestSupport(_system: ActorSystem) extends TestKit(_system) with I
   val cl = getClass.getClassLoader
   cl.loadClass("org.slf4j.LoggerFactory").getMethod("getLogger",cl.loadClass("java.lang.String")).invoke(null,"ROOT")
 
-  val testLogDir = "server/src/test/resources/META-INF/logs/"
+  val testLogDir = "src/test/resources/META-INF/logs/"
 
   def sleepFor(t: Long) { Thread.sleep(t) }
   def sleep(ms: Long) = () => Thread.sleep(ms)

@@ -123,7 +123,7 @@
                 </executions>
                 <configuration>
                     <descriptor>src/main/resources/assembly.xml</descriptor>
-                    <finalName>lib_mail_agent</finalName>
+                    <finalName>pda</finalName>
                     <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
             </plugin>
@@ -210,9 +210,9 @@
             <version>2.3-M1</version>
         </dependency>
         <dependency>
-            <groupId>com.fg.mail</groupId>
-            <artifactId>lib_mail_agent_client</artifactId>
-            <version>5.2.6-SNAPSHOT</version>
+            <groupId>postfix-deliverability-analytics</groupId>
+            <artifactId>client</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
         <dependency>

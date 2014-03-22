@@ -40,7 +40,7 @@
             <outputDirectory>conf</outputDirectory>
         </file>
         <file>
-            <source>src/main/resources/mailagentctl</source>
+            <source>src/main/resources/control.sh</source>
             <fileMode>0755</fileMode>
             <outputDirectory>bin</outputDirectory>
         </file>

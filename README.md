@@ -3,6 +3,38 @@ Postfix Deliverability Analytics
 
 Due to the smtp protocol imperfection there are very limited possibilities for a mail client to learn much about what happens with a message after being sent. However we can resolve this information from logs of Postfix smtp server that is logging the entire course of message delivery process. PDA runs on the same host and it is parsing postfix log files and indexing data so that mail clients can query PDA over http and restful interface for whatever information it is interested in. 
 
+Build instructions
+-----
+
+PDA is not meant to be an embeddable application but rather standalone agent monitoring postfix logs and serving client requests. So far it uses maven and you don't need to use anything else then basic maven goals like clean, test and install. Install makes a package with generated shell scripts that are self documented.
+
+Use [smart-copy.sh](https://github.com/FgForrest/Postfix-Deliverability-Analytics/blob/master/server/smart-copy.sh) for package distribution.
+
+Use [control.sh](https://github.com/FgForrest/Postfix-Deliverability-Analytics/blob/master/server/src/main/resources/control.sh) for server lifecycle management
+
+This is a directory structure you're end up with :
+
+```
+├── db
+│   └── main
+│       ├── queue
+│       ├── queue.p
+│       ├── queue.t
+│       ├── smtpLogDb
+│       └── smtpLogDb.p
+└── pda
+    ├── bin
+    │   ├── control.sh
+    │   └── start.sh
+    ├── conf
+    │   ├── application.conf
+    │   └── bounce-regex-list.xml
+    ├── logs
+    │   └── app-2014-03-22_205457.log
+    └── repo (jars)
+
+```
+
 PDA general info
 ----
 
@@ -20,9 +52,11 @@ PDA general info
     1. regex-bounce-list.xml file is processed 
     2. log files that were backed up by logrotate are indexed
     3. tailing of the actual log file that is being written to starts, indexing all its current and future content
-    4. HttpServer starts listening http requests
+    4. HttpServer starts listening to http requests
 
-Postfix setting
+![Diagram](https://github.com/FgForrest/Postfix-Deliverability-Analytics/blob/master/diagram.png)
+
+Postfix settings
 ----
 
   - All necessary configuration regarding to postfix can be set in /etc/postfix/main.cf
@@ -39,35 +73,35 @@ Postfix setting
         -  rotated-file-pattern = "mail\\.log\\.(\\d{1,3}).*"
         -  max-file-size-to-index : 1000
 
-SMTP client setting
+Mail client settings
 ----
 
-Client applications must identify themselves so that PDA is able to associate message queues with corresponding smtp clients.
-  - there are 2 ways how to do that
-    - **simple** : override Message-ID header with value of this format :
+Client applications must identify themselves so that PDA is able to associate message queues with corresponding smtp clients. There are 2 ways how to do that:
+  - **simple** : override Message-ID header with value of this format :
 ```
 "<" + "cid".hashCode() + '.' + id + '.' + RND.nextInt(1000) + '@' + clientId + ">"
 ```
-    - **complicated** : consists in adding a new header "client-id" to a message and setting up postfix to log these headers so that PDA can see that. Header_checks and logging requires creating a configuration file /etc/postfix/maps/header_checks which makes postfix log messages that have a "client-id" MIME header
+    
+   - **complicated** : consists in adding a new header "client-id" to a message and setting up postfix to log these headers so that PDA can see that. Header_checks and logging requires creating a configuration file /etc/postfix/maps/header_checks which makes postfix log messages that have a "client-id" MIME header
 ```
 "/^client-id:.* / INFO"
 ```
 
-Syslog setting
+Syslog settings
 ------
 
-Syslog is logging timestamps without miliseconds which is not quite useful
-  - /etc/rsyslog.conf 
-    - define MailLogFormat template
+Syslog is logging timestamps without miliseconds which is not quite useful. In /etc/rsyslog.conf :
+   - define MailLogFormat template
 ```
 $template MailLogFormat,"%timegenerated:1:4:date-rfc3339% %timegenerated:1:6:date-rfc3164-buggyday% %timegenerated:12:23:date-rfc3339% %source% %syslogtag%%msg%\n"
 ``` 
-    - tell syslog to use template MailLogFormat for logging into mail.* log files
+
+   - tell syslog to use template MailLogFormat for logging into mail.* log files
 ```
 mail.*              -/var/log/mail.log;MailLogFormat
 ```
 
-Logrotate setting
+Logrotate settings
 ------
 
 Logrotate is periodically rotating log files so that the log file will be renamed and compressed as follows : 
@@ -92,6 +126,4 @@ Logrotate is periodically rotating log files so that the log file will be rename
 PDA setting
 -----
 
-All PDA settings are available in application.conf
-
-    
+All PDA settings are available in [application.conf](https://github.com/FgForrest/Postfix-Deliverability-Analytics/blob/master/server/src/main/resources/application.conf)

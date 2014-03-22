@@ -4,11 +4,11 @@ HTTP_AUTH=$2
 REMOTE_USER=$2
 REMOTE_HOST=$3
 
-DISTRIBUTION_PATH="./target/lib_mail_agent.tar.gz"
+DISTRIBUTION_PATH="./target/pda.tar.gz"
 BOUNCE_REGEX_LIST_PATH="./src/main/resources/bounce-regex-list.xml"
 DESTINATION_PATH="/www/p_prj/prj_mail/"
 DESTINATION_BOUNCE_PATH="/www/p_prj/p_fg/massmailupdate/htdoc/html/agent/"
-DISTRIBUTION_NAME="lib_mail_agent"
+DISTRIBUTION_NAME="pda"
 RESULTING_PATH="$DESTINATION_PATH$DISTRIBUTION_NAME"
 PID_REGEX="^[0-9]+$"
 W_TIMEOUT=10;
