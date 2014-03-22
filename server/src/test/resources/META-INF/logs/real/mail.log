@@ -1,0 +1,8 @@
+2013 Jun 12 06:35:24.123 gds39d postfix/smtpd[25425]: connect from localhost[127.0.0.1]
+2013 Jun 12 06:35:24.123 gds39d postfix/smtpd[25425]: disconnect from localhost[127.0.0.1]
+2013 Jun 12 06:36:11.123 gds39d postfix/smtpd[25425]: connect from localhost[127.0.0.1]
+2013 Jun 12 06:36:11.123 gds39d postfix/smtpd[25425]: disconnect from localhost[127.0.0.1]
+2013 Jun 12 06:37:11.123 gds39d postfix/smtpd[25425]: connect from localhost[127.0.0.1]
+2013 Jun 12 06:37:11.123 gds39d postfix/smtpd[25425]: disconnect from localhost[127.0.0.1]
+2013 Jun 12 06:37:58.123 gds39d postfix/smtpd[25425]: connect from nagios.fg.cz[193.86.74.11]
+2013 Jun 12 06:37:58.123 gds39d postfix/smtpd[25425]: disconnect from nagios.fg.cz[193.86.74.11]

@@ -1,0 +1,88 @@
+<!-- see http://www.serversmtp.com/en/smtp-error -->
+<bounces>
+    <hard>
+        <regex category="bad domain: host/domain not found">
+            <or>(:?host|domain).*(:?not found|disabled)</or>
+        </regex>
+        <regex category="bad domain/command: connection refused">
+            <or>connection.*refused</or>
+            <or>Syntax error in parameters or arguments</or>
+            <or>Command not allowed</or>
+        </regex>
+        <regex category="network unreachable">
+            <or>network.*unreachable</or>
+            <or>no route to host</or>
+            <or>(:?unrouteable|unroutable).*(:?address|host)</or>
+        </regex>
+        <regex category="expired, returned to sender">
+            <or>returned to sender</or>
+        </regex>
+        <regex category="authentication required">
+            <or>(:?auth).*(:?required)</or>
+        </regex>
+        <regex category="spam detection and blacklisting">
+            <or>(:?spam|unsolicited|blacklisting|blacklisted|blacklist|554 )</or>
+        </regex>
+        <regex category="policy breach">
+            <or>(:?rejected|denied).*(:?policy)</or>
+        </regex>
+        <regex category="mailbox not found, is inactive, disabled or does not exist">
+            <or>(:?mailbox|address|user|account|recipient|@).*(:?rejected|unknown|disabled|unavailable|invalid|inactive|not exist)</or>
+            <or>(:?rejected|unknown|unavailable|no|illegal|invalid|no such).*(:?mailbox|address|user|account|recipient|alias)</or>
+            <or>(:?address|user|recipient) does(n't| not) have .*(:?mailbox|account)</or>
+            <or>550 |553 |501 </or>
+        </regex>
+    </hard>
+    <soft>
+        <regex category="try again">
+            <or>try.*later</or>
+            <or>connection.*lost</or>
+            <or>lost.*connection</or>
+            <or>cannot deliver to this user at this time</or>
+            <or>(:?temporarily|temporary).*(:?deferred|error|unavailable)</or>
+            <or>(:?problem|error|zkuste pozdeji|temporary|temporarily|insufficient system storage)</or>
+            <or>450 </or>
+            <or>451 </or>
+        </regex>
+        <regex category="bad domain: connection timeout">
+            <or>connection timed out|Session timeout exceeded|timed out while|Timeout waiting for client input</or>
+        </regex>
+        <regex category="violation">
+            <or>(:?too many|too much).*(:?connections|mail|send|recipients)</or>
+        </regex>
+        <regex category="access forbidden">
+            <or>(:?denied|IP address|overeni|refused|access forbidden).*(:?|IP |blocked)</or>
+            <or>refused to talk to me|not our customer</or>
+        </regex>
+        <regex category="greylisting">
+            <or>(:?greylisting|graylisted|greylisted|graylisting)</or>
+        </regex>
+        <regex category="relay denied">
+            <or>(:?relay|access|relaying|relay access).*(:?denied|not permitted|not allowed)</or>
+            <or>(:?we do not|unable to|isn't allowed).*(:?relay|relayed)</or>
+        </regex>
+        <regex category="service unavailable">
+            <or>service.*(:?unavailable|not available)</or>
+            <or>Internal error|Try that server first|local error in processing|Insufficient system resources|System failure</or>
+        </regex>
+        <regex category="dns problem">
+            <or>(:?DNS|name service).*(:?timeout|error)</or>
+        </regex>
+        <regex category="error on other side">
+            <or>alias expansion.*error</or>
+            <or>unable to figure out my IP addresses</or>
+        </regex>
+        <regex category="mailbox is full">
+            <or>(:?mailbox|schranka|full|over).*(:?preplnena|exceeded|mailbox|quota|full)</or>
+        </regex>
+        <regex category="Sender Policy Framework">
+            <or>Sender Policy Framework|SPF|Intrusion prevention</or>
+        </regex>
+        <regex category="message content, size or other validations and rules">
+            <or>(:?content|message|rules).*(:?rejection|rejected|refused|size exceeds)</or>
+        </regex>
+        <regex category="uncategorized or provider specific">
+            <or>loops back to myself|Bad address syntax</or>
+        </regex>
+    </soft>
+</bounces>
