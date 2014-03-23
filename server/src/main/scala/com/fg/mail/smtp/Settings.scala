@@ -7,6 +7,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import java.io.File
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 /**
  * All customizable agent properties. Remaining properties that could be customizable (date format, log entry regular expressions) are static
@@ -26,36 +27,44 @@ object Settings {
           fsResource
         else
           new File(getClass.getClassLoader.getResource("application.conf").toURI) // for testing environment
-      )
+      ).resolve()
     )
   }
 
-
   def buildOptions(c: Config) = {
     def sleep(ms: Long) = () => Thread.sleep(ms)
-    new Options(
-      c.getBoolean("app.profiling.enabled"),
-      c.getString("app.http-server.host"),
-      c.getStringList("app.notification.recipients").asScala,
-      Timeout(c.getInt("app.timing.request-timeout").second),
-      c.getDouble("app.logs.max-file-size-to-index"),
-      c.getInt("app.http-server.port"),
-      (c.getString("app.bounce-regex-list.url"), c.getString("app.bounce-regex-list.auth")),
-      c.getStringList("app.http-server.auth").asScala,
-      c.getBoolean("app.http-server.start"),
-      if (c.getString("app.logs.dir").endsWith("/")) c.getString("app.logs.dir") else c.getString("app.logs.dir") + "/",
-      c.getString("app.logs.tailed-log-file"),
-      c.getString("app.logs.rotated-file"),
-      c.getString("app.logs.rotated-file-pattern"),
-      _.matches(c.getString("app.logs.rotated-file-pattern")),
-      c.getInt("app.logs.index-batch-size"),
-      c.getString("app.db.dir"),
-      c.getString("app.db.name"),
-      c.getString("app.db.auth"),
-      c.getInt("app.timing.re-open-tries"),
-      sleep(c.getInt("app.timing.re-open-sleep")),
-      sleep(c.getInt("app.timing.eof-wait-for-new-input-sleep"))
-    )
+    Try(
+      new Options(
+        c.getBoolean("app.profiling.enabled"),
+        c.getString("app.http-server.host"),
+        c.getStringList("app.notification.recipients").asScala,
+        Timeout(c.getInt("app.timing.request-timeout").second),
+        c.getDouble("app.logs.max-file-size-to-index"),
+        c.getInt("app.http-server.port"),
+        (c.getString("app.bounce-regex-list.url"), c.getString("app.bounce-regex-list.auth")),
+        c.getStringList("app.http-server.auth").asScala,
+        c.getBoolean("app.http-server.start"),
+        if (c.getString("app.logs.dir").endsWith("/")) c.getString("app.logs.dir") else c.getString("app.logs.dir") + "/",
+        c.getString("app.logs.tailed-log-file"),
+        c.getString("app.logs.rotated-file"),
+        c.getString("app.logs.rotated-file-pattern"),
+        _.matches(c.getString("app.logs.rotated-file-pattern")),
+        c.getInt("app.logs.index-batch-size"),
+        c.getString("app.db.dir"),
+        c.getString("app.db.name"),
+        c.getString("app.db.auth"),
+        c.getInt("app.timing.re-open-tries"),
+        sleep(c.getInt("app.timing.re-open-sleep")),
+        sleep(c.getInt("app.timing.eof-wait-for-new-input-sleep"))
+      )
+    ) match {
+      case Success(o) =>
+        logger.info("Settings successfully parsed...")
+        o
+      case Failure(ex) =>
+        logger.info(s"There is an error in settings", ex)
+        throw ex
+    }
   }
 }
 

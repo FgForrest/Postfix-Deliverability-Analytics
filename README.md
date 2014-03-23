@@ -8,7 +8,7 @@ Build instructions
 
 PDA is not meant to be an embeddable application but rather standalone agent monitoring postfix logs and serving client requests. So far it uses maven and you don't need to use anything else then basic maven goals like clean, test and install. Install makes a package with generated shell scripts that are self documented.
 
-Use [smart-copy.sh](https://github.com/FgForrest/Postfix-Deliverability-Analytics/blob/master/server/smart-copy.sh) for package distribution.
+Use [common.sh](https://github.com/FgForrest/Postfix-Deliverability-Analytics/blob/master/server/common.sh) for package distribution.
 
 Use [control.sh](https://github.com/FgForrest/Postfix-Deliverability-Analytics/blob/master/server/src/main/resources/control.sh) for server lifecycle management
 

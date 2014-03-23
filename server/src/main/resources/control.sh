@@ -7,7 +7,7 @@ then
 	echo
 	echo "    *** Please specify http authentication 'username:password ***    "
 	echo
-    echo "        mailagentctl start admin:1234    "
+    echo "        control.sh (start|stop|restart|reindex|refreshBouncelist|unknownBounces|status) admin:1234    "
     echo
     exit
 fi
@@ -73,7 +73,7 @@ function restart () {
     echo "Application is not running. Starting now..."
     startDaemon;
   else
-    echo "Please fix restart function of mailagentctl script, it does not work as expected"
+    echo "Please fix restart function of control.sh script, it does not work as expected"
   fi
 
   return $STATUS;
