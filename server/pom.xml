@@ -21,7 +21,7 @@
     </developers>
 
     <parent>
-        <groupId>postfix-deliverability-analytics</groupId>
+        <groupId>com.fg.pda</groupId>
         <artifactId>parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
@@ -210,7 +210,7 @@
             <version>2.3-M1</version>
         </dependency>
         <dependency>
-            <groupId>postfix-deliverability-analytics</groupId>
+            <groupId>com.fg.pda</groupId>
             <artifactId>client</artifactId>
             <version>1.0.0-SNAPSHOT</version>
             <scope>test</scope>
