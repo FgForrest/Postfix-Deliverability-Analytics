@@ -8,22 +8,47 @@ function removeDeploy () {
       rm -r "$deploy_path/$distribution_name" > /dev/null
 }
 
-function copyToLocal () {
-    if [ -d "$deploy_path/$distribution_name" ]; then
+function stop () {
+    DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
+    if [[ "$DPID" =~ $PID_REGEX ]]; then
+        echo "Application is running with PID=$DPID"
+        AGSTATUS=`curl -u $http_auth http://127.0.0.1:1523/agent-shutdown 2>/dev/null`
+        echo "Application shut down with status:"
+        echo "$AGSTATUS";
+        echo "Waiting ${kill_timeout}s before kill."
+        sleep $kill_timeout;
         DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
         if [[ "$DPID" =~ $PID_REGEX ]]; then
-            echo "Application is running with PID=$DPID"
-            AGSTATUS=`curl -u $http_auth http://127.0.0.1:1523/agent-shutdown 2>/dev/null`
-            echo "Application shut down with status:"
-            echo "$AGSTATUS";
-            echo "Waiting ${kill_timeout}s before kill."
-            sleep $kill_timeout;
-            DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
-            if [[ "$DPID" =~ $PID_REGEX ]]; then
-                echo "Trying to kill Mail Agent."
-                kill -9 $DPID
-            fi
+            echo "Trying to kill Mail Agent."
+            kill -9 $DPID
         fi
+    else
+        echo "Application is not running"
+    fi
+}
+
+function start () {
+    stop
+
+    if [ ! -d "${deploy_path}/${distribution_name}/bin" ]; then
+        echo
+        echo "    ****   Cannot start application because ${deploy_path}/${distribution_name}/bin does not exist    "
+        echo
+        exit
+    fi
+
+    cd "${deploy_path}/${distribution_name}/bin"
+    echo "*** Starting application ***";
+    /bin/bash ./control.sh start $http_auth
+    sleep 1
+    cd ${deploy_log_path}
+    tail -f $(ls -1t | head -1)
+
+}
+
+function copyToLocal () {
+    if [ -d "$deploy_path/$distribution_name" ]; then
+        stop
         removeDeploy
     fi
 
@@ -35,21 +60,10 @@ function copyToLocal () {
     tar -C "$deploy_path" -zxf "$distribution_path" > /dev/null
 }
 
-function run () {
-    cd "${deploy_path}/${distribution_name}/bin"
-    echo "*** Starting application ***";
-    /bin/bash ./control.sh start $http_auth
-    sleep 1
-    cd ${deploy_log_path}
-    tail -f $(ls -1t | head -1)
-
-}
-
 function copyToLocalAndRun () {
     copyToLocal
-
     if [ $? == 0 ]; then
-        run
+        start
     fi
 }
 
@@ -64,22 +78,18 @@ function deleteDB () {
 }
 
 function copyToLocalDeleteDBAndRun () {
-
     copyToLocal
-
     backupDB
-
     deleteDB
-
     if [ $? == 0 ]; then
-        run
+        start
     fi
 }
 
 function copyToRemote () {
     if [ ! -f "$distribution_path" ] || [ -z "$remote_user" ] || [ -z "$remote_host" ]; then
         echo
-        echo "    ****   Please provide remote user and host      "
+        echo "    ****   Please provide remote user and host and verify $distribution_path exists    "
         echo
         echo "           common.sh copyToRemote admin charon.example.com   "
         echo
@@ -93,7 +103,7 @@ function copyToRemote () {
 function copyBounceToRemote () {
     if [ ! -f "$distribution_path" ] || [ -z "$remote_user" ] || [ -z "$remote_host" ]; then
         echo
-        echo "    ****   Please provide remote user and host      "
+        echo "    ****   Please provide remote user and host and verify $distribution_path exists     "
         echo
         echo "           common.sh copyBounceToRemote admin charon.example.com   "
         echo
@@ -129,11 +139,19 @@ case "$1" in
         deleteDB)
                 deleteDB;
                 ;;
+        stop)
+                stop;
+                ;;
+        start)
+                start;
+                ;;
         *)
                 cat <<EOF
-Usage: $0 (copyToLocal|copyToLocalAndRun|copyToLocalDeleteDBAndRun|copyToRemote|copyBounceToRemote|removeDeploy|deleteDB|backupDB)
-    *** set up properties in common.sh properties
+Usage: $0 (start|stop|copyToLocal|copyToLocalAndRun|copyToLocalDeleteDBAndRun|copyToRemote|copyBounceToRemote|removeDeploy|deleteDB|backupDB)
+    *** set up properties in common.sh properties ***
 
+  start                         start or restart application
+  stop                          stop application
   copyToLocal                   gunzip and copy distribution to its target destination
   copyToLocalAndRun             gunzip and copy distribution to its target destination and start application
   copyToLocalDeleteDBAndRun     gunzip and copy distribution to its target destination, delete database and start application
@@ -142,6 +160,7 @@ Usage: $0 (copyToLocal|copyToLocalAndRun|copyToLocalDeleteDBAndRun|copyToRemote|
   removeDeploy                  delete deployed distribution
   backupDB                      backup database files
   deleteDB                      delete database files
+
 EOF
                 exit 1
                 ;;
