@@ -52,7 +52,11 @@ object ParsingUtils {
         }
     }
 
-  case class Arbiter(remainingSize: Double, toIndex: TreeSet[File], toIgnore: TreeSet[File])
+  case class Arbiter(remainingSize: Double, toIndex: TreeSet[File], toIgnore: TreeSet[File]) {
+
+    def toIndexInit: TreeSet[File] = if (toIndex.isEmpty) TreeSet[File]() else toIndex.init
+
+  }
 
   def splitFiles(d: File, o: Options): Arbiter = {
     val rotatedPatternRegex = o.rotatedPattern.r
@@ -69,6 +73,10 @@ object ParsingUtils {
 
     def fileLength(f: File): Long = {
       if (f.getName.endsWith("gz") || f.getName.endsWith("tar")) f.length() * 10 else f.length()
+    }
+
+    if (new File(o.logDir + o.tailedLogFileName).createNewFile()) {
+      log.warn(s"File to be tailed ${o.tailedLogFileName} doesn't exist, it was created...")
     }
 
     val allFiles = d.listFiles().filter(!_.isDirectory)

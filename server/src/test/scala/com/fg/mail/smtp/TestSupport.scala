@@ -61,6 +61,8 @@ abstract class TestSupport(_system: ActorSystem) extends TestKit(_system) with I
 
   def loadOptions(fileName: String): Options =
     Settings.buildOptions(
-      ConfigFactory.parseFile(Option(getClass.getClassLoader.getResource(fileName)).fold(new File("../conf/" + fileName))(url => new File(url.toURI)))
+      ConfigFactory.parseFile(
+        Option(getClass.getClassLoader.getResource(fileName)).fold(new File("../conf/" + fileName))(url => new File(url.toURI))
+      ).resolve()
     )
 }

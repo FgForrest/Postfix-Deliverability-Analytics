@@ -127,7 +127,9 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
 
       case StartTailing =>
         val tailedLogFile = new File(o.logDir + o.tailedLogFileName)
-        assert(tailedLogFile.exists(), s"File to be tailed ${tailedLogFile.getName} doesn't exist !")
+        if (tailedLogFile.createNewFile()) {
+          logger.warn(s"File to be tailed ${tailedLogFile.getName} doesn't exist, it was created...")
+        }
         val length = tailedLogFile.length()
         val tailingBatchSize = if (length < (1024 * 1024)) 1 else length / (1024 * 1024)
         log.info("Preparing for tailing file " + tailedLogFile.getName + " with batch size " + tailingBatchSize + " MB")
@@ -209,8 +211,16 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
     arbiter.toIgnore.foreach { f =>
       log.info(s"file ${f.getName} is not going to be indexed because it is beyond limit")
     }
-    val indexedFiles = arbiter.toIndex.init.filter(indexFileIfNeeded(_, false))
-    if (indexFileIfNeeded(arbiter.toIndex.last, true)) true else !indexedFiles.isEmpty
+    if (arbiter.toIndex.isEmpty) {
+      log.info("There are no backup files to index...")
+      false
+    }
+
+    val indexedFiles = arbiter.toIndexInit.filter(indexFileIfNeeded(_, false))
+    if (indexFileIfNeeded(arbiter.toIndex.last, true))
+      true
+    else
+      !indexedFiles.isEmpty
   }
 
   var cidCount: Long = 0
