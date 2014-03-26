@@ -68,13 +68,17 @@ function copyToLocalAndRun () {
 }
 
 function backupDB () {
-    echo "*** backing up existing DB files ***";
-    [ "$(ls -A ${deploy_path}/db/* &>/dev/null)" ] && zip -r "/tmp/db_backup.zip" ${deploy_path}/db || echo "${deploy_path}/db is empty. No backup."
+    if [ "$(ls -A ${deploy_path}/db/* 2>/dev/null)" ]; then
+        echo "*** backing up existing DB files ***";
+        zip -r "/tmp/db_backup.zip" "${deploy_path}/db";
+    else
+        echo "${deploy_path}/db is empty. No backup."
+    fi
 }
 
 function deleteDB () {
-    echo "*** removing existing DB files***";
-    rm -f "${deploy_path}/db/*" > /dev/null
+    echo "*** removing existing DB files from ${deploy_path}/db/ ***";
+    rm -f ${deploy_path}/db/*
 }
 
 function copyToLocalDeleteDBAndRun () {
