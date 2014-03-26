@@ -60,7 +60,7 @@ import com.fg.mail.smtp.IndexBackupRecords
 class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) extends Actor with ActorLogging with Profilable {
 
   var executorService: ExecutorService = _
-  var bounceMap: ListMap[String, ListMap[String, Regex]] = _
+  var bounceMap: ListMap[String, ListMap[String, (Regex, Long)]] = _
   var queue: Queue = _
   var restarted: Boolean = false
 
@@ -116,8 +116,17 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
           val start = System.currentTimeMillis()
           val indexingBackup = parseAndIndexRotatedLogFiles(queue, logDir, digests, context.parent ! IndexBackupRecords(_, _, _, _))
           log.info(s"Backup logs parsed in ${System.currentTimeMillis() - start} ms")
-          log.info("Please wait until raw log data is indexed and persisted")
           context.parent ! ParsingBackupFinished
+
+          bounceMap.foreach {
+            case (key: String, r: ListMap[String, (Regex, Long)]) =>
+            log.info(key + " bounces")
+            r.foreach {
+              case (category: String, value: (Regex, Long)) =>
+                log.info(value._2 + " : " + category)
+            }
+          }
+
           log.info(getResultString)
 
           if (!indexingBackup) self ! StartTailing

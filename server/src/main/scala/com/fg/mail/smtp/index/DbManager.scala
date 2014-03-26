@@ -17,7 +17,6 @@ class DbManager(val o: Options) extends Profilable {
   lazy val indexDb: DB = buildIndexDb
 
   lazy val queueDb = DBMaker.newFileDB(new File(o.dbDir + "/queue"))
-            .fullChunkAllocationEnable()
             .syncOnCommitDisable()
             .closeOnJvmShutdown()
             .make()
@@ -25,7 +24,7 @@ class DbManager(val o: Options) extends Profilable {
   def buildIndexDb = {
     val dbMaker = DBMaker
                       .newFileDB(new File(o.dbDir + "/" + o.dbName))
-                      .fullChunkAllocationEnable()
+                      .mmapFileEnablePartial()
                       .syncOnCommitDisable()
                       .closeOnJvmShutdown()
                       .freeSpaceReclaimQ(3)

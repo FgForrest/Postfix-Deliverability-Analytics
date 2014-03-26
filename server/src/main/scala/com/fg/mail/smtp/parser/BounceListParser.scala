@@ -22,7 +22,7 @@ import com.fg.mail.smtp.util.Commons
 class BounceListParser {
   val log = LoggerFactory.getLogger(getClass)
 
-  def parse(uriAndCredentials: (String, String)): Either[Throwable, ListMap[String, ListMap[String, Regex]]] = {
+  def parse(uriAndCredentials: (String, String)): Either[Throwable, ListMap[String, ListMap[String, (Regex, Long)]]] = {
     log.info("Resolving regex bounce list from " + uriAndCredentials._1)
     catching(classOf[Throwable])
       .either(Commons.getInputStream(uriAndCredentials._1, Option(uriAndCredentials._2).filter(_.trim.nonEmpty)))
@@ -32,7 +32,7 @@ class BounceListParser {
         }
   }
 
-  def parse(is: InputStream): Either[Exception, ListMap[String, ListMap[String, Regex]]] = {
+  def parse(is: InputStream): Either[Exception, ListMap[String, ListMap[String, (Regex, Long)]]] = {
     log.info("parsing regex bounce list")
     /**
      * @param n xml bounces node
@@ -64,10 +64,10 @@ class BounceListParser {
     getValidNodeOnly(XML.load(is)) match {
       case Right(n) =>
         Right(
-          (n \ "_").foldLeft(ListMap[String, ListMap[String, Regex]]("hard" -> ListMap[String, Regex](), "soft" -> ListMap[String, Regex]()))((accumulator, n) => {
+          (n \ "_").foldLeft(ListMap[String, ListMap[String, (Regex, Long)]]("hard" -> ListMap[String, (Regex, Long)](), "soft" -> ListMap[String, (Regex, Long)]()))((accumulator, n) => {
             (n \ "regex").foldLeft(accumulator)(
               (acc, regexElm) => {
-                  acc(n.label) += ( (regexElm \ "@category").text -> new Regex("(?i)(" + (regexElm \ "or").map("("+_.text+")").reduceLeft[String]((ac, g) => ac+"|"+g)+")") )
+                  acc(n.label) += ( (regexElm \ "@category").text -> (new Regex("(" + (regexElm \ "or").map("("+_.text+")").reduceLeft[String]((ac, g) => ac+"|"+g)+")"), 0L) )
                   acc
                 }
               )

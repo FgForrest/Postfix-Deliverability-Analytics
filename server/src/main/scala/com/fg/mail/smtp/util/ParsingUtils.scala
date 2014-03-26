@@ -37,20 +37,44 @@ object ParsingUtils {
    *
    * @return tuple (hard-1/soft-0, bounce reason message)
    */
-  def resolveState(info: String, status: String, hasBeenDeferred: Boolean, bounceMap: ListMap[String, ListMap[String, Regex]]): (Int, String) =
+  def resolveState(info: String, status: String, hasBeenDeferred: Boolean, bounceMap: ListMap[String, ListMap[String, (Regex, Long)]]): (Int, String) = {
+
+    def stripPrefix(target: String): String = {
+      if (target.startsWith("host ")) {
+        val relevantIndex = target.indexOf(" said: ")
+        if (relevantIndex > 0)
+          target.substring(relevantIndex + " said: ".length)
+      } else if (target.startsWith("connect to ")) {
+        val relevantPart = target.substring("(connect to ".length)
+        val relevantIndex = relevantPart.indexOf(' ')
+        if (relevantIndex > 0)
+          relevantPart.substring(relevantIndex + 1)
+      }
+      target
+    }
+
     status match {
       case "sent" if hasBeenDeferred => (4, "finally OK")
       case "sent" => (3, "OK")
       case "expired" => (0, "expired, returned to sender")
-      case _ =>
+      case _ => {
         bounceMap.foldLeft((2, "unable to decide on type of bounce")) {
           case (acc, (bounceType, regexByCategory)) =>
-            regexByCategory.find { case (category, regex) => regex.pattern.matcher(info).find() } match {
-              case Some((category, regex)) => if (bounceType == "soft") (0, category) else (1, category)
+            regexByCategory.find {
+              case (category, (regex, count)) => regex.pattern.matcher(stripPrefix(info.toLowerCase)).find()
+            } match {
+              case Some((category, (regex, count))) =>
+                regexByCategory.put(category, (regex, count + 1))
+                if (bounceType == "soft")
+                  (0, category)
+                else
+                  (1, category)
               case None => acc
             }
         }
+      }
     }
+  }
 
   case class Arbiter(remainingSize: Double, toIndex: TreeSet[File], toIgnore: TreeSet[File]) {
 

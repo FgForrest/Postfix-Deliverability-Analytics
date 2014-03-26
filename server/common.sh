@@ -83,6 +83,14 @@ function deleteDB () {
 
 function copyToLocalDeleteDBAndRun () {
     copyToLocal
+    deleteDB
+    if [ $? == 0 ]; then
+        start
+    fi
+}
+
+function copyToLocalBackupDeleteDBAndRun () {
+    copyToLocal
     backupDB
     deleteDB
     if [ $? == 0 ]; then
@@ -128,6 +136,9 @@ case "$1" in
         copyToLocalDeleteDBAndRun)
                 copyToLocalDeleteDBAndRun;
                 ;;
+        copyToLocalBackupDeleteDBAndRun)
+                copyToLocalBackupDeleteDBAndRun;
+                ;;
         copyToRemote)
                 copyToRemote;
                 ;;
@@ -151,19 +162,20 @@ case "$1" in
                 ;;
         *)
                 cat <<EOF
-Usage: $0 (start|stop|copyToLocal|copyToLocalAndRun|copyToLocalDeleteDBAndRun|copyToRemote|copyBounceToRemote|removeDeploy|deleteDB|backupDB)
+Usage: $0 (start|stop|copyToLocal|copyToLocalAndRun|copyToLocalDeleteDBAndRun|copyToLocalBackupDeleteDBAndRun|copyToRemote|copyBounceToRemote|removeDeploy|deleteDB|backupDB)
     *** set up properties in common.sh properties ***
 
-  start                         start or restart application
-  stop                          stop application
-  copyToLocal                   gunzip and copy distribution to its target destination
-  copyToLocalAndRun             gunzip and copy distribution to its target destination and start application
-  copyToLocalDeleteDBAndRun     gunzip and copy distribution to its target destination, delete database and start application
-  copyToRemote                  copy distribution to its remote target destination
-  copyBounceToRemote            copy boulce-regex-list.xml to a remote server
-  removeDeploy                  delete deployed distribution
-  backupDB                      backup database files
-  deleteDB                      delete database files
+  start                             start or restart application
+  stop                              stop application
+  copyToLocal                       gunzip and copy distribution to its target destination
+  copyToLocalAndRun                 gunzip and copy distribution to its target destination and start application
+  copyToLocalDeleteDBAndRun         gunzip and copy distribution to its target destination, delete database and start application
+  copyToLocalBackupDeleteDBAndRun   gunzip and copy distribution to its target destination, backup, delete database and start application
+  copyToRemote                      copy distribution to its remote target destination
+  copyBounceToRemote                copy boulce-regex-list.xml to a remote server
+  removeDeploy                      delete deployed distribution
+  backupDB                          backup database files
+  deleteDB                          delete database files
 
 EOF
                 exit 1
