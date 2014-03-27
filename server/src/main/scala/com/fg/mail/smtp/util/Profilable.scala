@@ -39,4 +39,10 @@ trait Profilable extends CollectionImplicits {
       acc + " --- overall --- " + t._1 + " : " + (totalTime / 1000 / 1000) + " seconds in " + callsCount + " calls\n"
     }
   }
+
+  def logResultString = {
+    if (o.profilingEnabled)
+      logger.info(getResultString)
+
+  }
 }

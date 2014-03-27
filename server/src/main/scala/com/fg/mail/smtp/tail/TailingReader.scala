@@ -118,16 +118,19 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
           log.info(s"Backup logs parsed in ${System.currentTimeMillis() - start} ms")
           context.parent ! ParsingBackupFinished
 
-          bounceMap.foreach {
-            case (key: String, r: ListMap[String, (Regex, Long)]) =>
-            log.info(key + " bounces")
-            r.foreach {
-              case (category: String, value: (Regex, Long)) =>
-                log.info(value._2 + " : " + category)
-            }
-          }
+          log.info(
+            bounceMap.foldLeft(new StringBuffer("How many error messages were classified into categories :\n")) {
+              case (sb, (key: String, r: ListMap[String, (Regex, Long)])) =>
+                sb.append(key + " bounces" + "\n")
+                r.foreach {
+                  case (category: String, value: (Regex, Long)) =>
+                    sb.append("\t" + value._2 + " : " + category + "\n")
+                }
+                sb
+            }.toString
+          )
 
-          log.info(getResultString)
+          logResultString
 
           if (!indexingBackup) self ! StartTailing
         } catch {

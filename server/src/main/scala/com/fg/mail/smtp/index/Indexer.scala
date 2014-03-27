@@ -92,8 +92,8 @@ class Indexer(counter: ActorRef, dbManager: DbManager, val o: Options) extends A
 
       case ParsingBackupFinished =>
         timer = System.currentTimeMillis()
-        log.info(getResultString)
-        log.info(dbManager.getResultString)
+        logResultString
+        dbManager.logResultString
         if (index.isEmpty)
           log.warning("No backup files were parsed !")
 

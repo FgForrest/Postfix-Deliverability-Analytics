@@ -23,10 +23,13 @@ object Settings {
     val fsResource = new File("../conf/application.conf")
     buildOptions(
       ConfigFactory.parseFile(
-        if (fsResource.exists())
+        if (fsResource.exists()) {
+          logger.info("Loading configuration from filesystem : " + fsResource.getAbsolutePath)
           fsResource
-        else
+        } else {
+          logger.info("Loading configuration from classpath...")
           new File(getClass.getClassLoader.getResource("application.conf").toURI) // for testing environment
+        }
       ).resolve()
     )
   }
