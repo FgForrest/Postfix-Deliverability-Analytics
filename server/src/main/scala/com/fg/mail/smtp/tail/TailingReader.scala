@@ -60,7 +60,7 @@ import com.fg.mail.smtp.IndexBackupRecords
 class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) extends Actor with ActorLogging with Profilable {
 
   var executorService: ExecutorService = _
-  var bounceMap: ListMap[String, ListMap[String, (Regex, Long)]] = _
+  var prioritizedBounceList: scala.collection.mutable.TreeSet[(String, Long, Long, String, Regex)] = _
   var queue: Queue = _
   var restarted: Boolean = false
 
@@ -119,14 +119,9 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
           context.parent ! ParsingBackupFinished
 
           log.info(
-            bounceMap.foldLeft(new StringBuffer("How many error messages were classified into categories :\n")) {
-              case (sb, (key: String, r: ListMap[String, (Regex, Long)])) =>
-                sb.append(key + " bounces" + "\n")
-                r.foreach {
-                  case (category: String, value: (Regex, Long)) =>
-                    sb.append("\t" + value._2 + " : " + category + "\n")
-                }
-                sb
+            prioritizedBounceList.foldLeft(new StringBuffer("How many error messages were classified into categories :\n")) {
+              case (sb, t@(prioritizedOrder, defaultOrder, bounceType, bounceCategory, regex)) =>
+                sb.append("\t" + prioritizedOrder + " : " + bounceType + " : " + bounceCategory + "\n")
             }.toString
           )
 
@@ -291,7 +286,7 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
               queue.insert(queueId, t.copy(rcpt = recipient, hasBeenDeferred = true))
             }
             val (state, errorMessage) = profile(100, "categorizing error", info) {
-              ParsingUtils.resolveState(info, status, hasBeenDeferred, bounceMap)
+              ParsingUtils.resolveState(info, status, hasBeenDeferred, prioritizedBounceList)
             }
             deliveryAttemptCount += 1
             Some(ClientIndexRecord(clientId, IndexRecord(date, queueId, msgId, recipient, "unknown", status, info, state, errorMessage), fromTailing))
@@ -306,7 +301,7 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
         queue.lookup(queueId)
         match {
           case Some(QueueRecord(msgId: String, clientId: String, rcpt: String, true)) =>
-            val (state, errorMessage) = ParsingUtils.resolveState(info, status, true, bounceMap)
+            val (state, errorMessage) = ParsingUtils.resolveState(info, status, true, prioritizedBounceList)
             deliveryAttemptCount += 1
             Some(ClientIndexRecord(clientId, IndexRecord(date, queueId, msgId, rcpt, sender, status, info, state, errorMessage), fromTailing))
 
@@ -347,11 +342,11 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
   }
 
   private def refreshBounceList() =
-    bounceMap = new BounceListParser().parse(o.bounceListUrlAndAuth).fold (
+    prioritizedBounceList = new BounceListParser().parse(o.bounceListUrlAndAuth).fold (
       error => {
         val errorMsg = "Unable to download or parse bounce list from remote server due to : " + error
         MailClient.info(errorMsg, o)
-        bounceMap
+        prioritizedBounceList
       },
       newBounceMap => newBounceMap
     )

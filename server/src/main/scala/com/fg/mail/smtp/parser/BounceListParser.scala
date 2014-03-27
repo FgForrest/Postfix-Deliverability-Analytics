@@ -6,7 +6,7 @@ import java.io.InputStream
 import scala.xml.XML
 import scala.util.control.Exception._
 import java.util.regex.{Pattern, PatternSyntaxException}
-import scala.collection.mutable.ListMap
+import scala.collection.mutable.TreeSet
 import org.slf4j.LoggerFactory
 import com.fg.mail.smtp.util.Commons
 
@@ -22,7 +22,7 @@ import com.fg.mail.smtp.util.Commons
 class BounceListParser {
   val log = LoggerFactory.getLogger(getClass)
 
-  def parse(uriAndCredentials: (String, String)): Either[Throwable, ListMap[String, ListMap[String, (Regex, Long)]]] = {
+  def parse(uriAndCredentials: (String, String)): Either[Throwable, TreeSet[(String, Long, Long, String, Regex)]] = {
     log.info("Resolving regex bounce list from " + uriAndCredentials._1)
     catching(classOf[Throwable])
       .either(Commons.getInputStream(uriAndCredentials._1, Option(uriAndCredentials._2).filter(_.trim.nonEmpty)))
@@ -32,15 +32,15 @@ class BounceListParser {
         }
   }
 
-  def parse(is: InputStream): Either[Exception, ListMap[String, ListMap[String, (Regex, Long)]]] = {
+  def parse(is: InputStream): Either[Exception, TreeSet[(String, Long, Long, String, Regex)]] = {
     log.info("parsing regex bounce list")
     /**
      * @param n xml bounces node
      * @return n if xml is valid or reason why it is not valid
      */
     def getValidNodeOnly(n: Node): Either[Exception, Node] = {
-      if (!(Set[String]() ++ (n \ "_").map(_.label)).equals(Set[String]("hard", "soft")))
-        Left(new IllegalArgumentException("bounces element must have just children 'hard' and 'soft'"))
+      if (!(Set[String]() ++ (n \ "_").map(_.label)).equals(Set[String]("regex")))
+        Left(new IllegalArgumentException("bounces element must have just 'regex' children"))
       else {
         (n \ "_")
           .foldLeft[Either[Exception,Node]](Right(n))((acc, group) =>
@@ -54,25 +54,33 @@ class BounceListParser {
                       if catching(classOf[PatternSyntaxException]).either(Pattern.compile(or.text)).isLeft || or.text.isEmpty
                   } yield or).toList match {
                   case Nil => acc
-                  case invalidRegexes => Left(new IllegalArgumentException("regex elements must have valid regular expresions:\n" + invalidRegexes.mkString("\n")))
+                  case invalidRegexes => Left(new IllegalArgumentException("regex elements must have valid regular expressions:\n" + invalidRegexes.mkString("\n")))
                 }
               }
           )
       }
     }
 
+    implicit val regexOrdering = Ordering.by[Regex, String](_.toString())
+    val ordering = Ordering[(String, Long, Long, String, Regex)].on((t: (String, Long, Long, String, Regex)) => (t._1, t._2, t._3, t._4, t._5)).reverse
     getValidNodeOnly(XML.load(is)) match {
       case Right(n) =>
+        val regexElements = n \ "regex"
         Right(
-          (n \ "_").foldLeft(ListMap[String, ListMap[String, (Regex, Long)]]("hard" -> ListMap[String, (Regex, Long)](), "soft" -> ListMap[String, (Regex, Long)]()))((accumulator, n) => {
-            (n \ "regex").foldLeft(accumulator)(
-              (acc, regexElm) => {
-                  acc(n.label) += ( (regexElm \ "@category").text -> (new Regex("(" + (regexElm \ "or").map("("+_.text+")").reduceLeft[String]((ac, g) => ac+"|"+g)+")"), 0L) )
-                  acc
-                }
+          regexElements.foldLeft(regexElements.size, TreeSet[(String, Long, Long, String, Regex)]()(ordering))(
+            (accumulator, regexElm) => {
+              accumulator._2.add(
+                (
+                  (regexElm \ "@type").text,
+                  0L,
+                  accumulator._1,
+                  (regexElm \ "@category").text,
+                  new Regex("(" + (regexElm \ "or").map("("+_.text+")").reduceLeft[String]((ac, g) => ac+"|"+g)+")")
+                )
               )
+              accumulator.copy(_1 = accumulator._1 - 1)
             }
-          )
+          )._2
         )
       case Left(v) => Left(v)
     }

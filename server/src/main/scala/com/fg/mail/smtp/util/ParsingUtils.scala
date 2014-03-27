@@ -1,6 +1,5 @@
 package com.fg.mail.smtp.util
 
-import scala.collection.mutable.ListMap
 import scala.util.matching.Regex
 import java.io.File
 import java.math.BigDecimal
@@ -30,14 +29,13 @@ object ParsingUtils {
   /* Log entry of this form follows mail that is considered expired and it is to be removed from queue */
   val expiredRegex = """^(\d{4} [a-zA-Z]+ \d{1,2} \d{2}:\d{2}:\d{2}.\d{3}).*?([a-zA-Z0-9]{15}): from=<(.*?@.*?)>.*?status=(expired), (.*)$""".r
 
-
   /**
    * Decide on type of bounce, soft bounce means that message was deferred and it is to be tried again later on. Hard bounce
    * means that the reason of not delivering a message was too serious to try to deliver message again, it is removed from queue right away
    *
    * @return tuple (hard-1/soft-0, bounce reason message)
    */
-  def resolveState(info: String, status: String, hasBeenDeferred: Boolean, bounceMap: ListMap[String, ListMap[String, (Regex, Long)]]): (Int, String) = {
+  def resolveState(info: String, status: String, hasBeenDeferred: Boolean, prioritizedBounceList: scala.collection.mutable.TreeSet[(String, Long, Long, String, Regex)]): (Int, String) = {
 
     def stripPrefix(target: String): String = {
       if (target.startsWith("host ")) {
@@ -57,22 +55,21 @@ object ParsingUtils {
       case "sent" if hasBeenDeferred => (4, "finally OK")
       case "sent" => (3, "OK")
       case "expired" => (0, "expired, returned to sender")
-      case _ => {
-        bounceMap.foldLeft((2, "unable to decide on type of bounce")) {
-          case (acc, (bounceType, regexByCategory)) =>
-            regexByCategory.find {
-              case (category, (regex, count)) => regex.pattern.matcher(stripPrefix(info.toLowerCase)).find()
-            } match {
-              case Some((category, (regex, count))) =>
-                regexByCategory.put(category, (regex, count + 1))
-                if (bounceType == "soft")
-                  (0, category)
-                else
-                  (1, category)
-              case None => acc
-            }
+      case _ =>
+        prioritizedBounceList.find {
+          case (bounceType, prioritizedOrder, defaultOrder, bounceCategory, regex) =>
+            regex.pattern.matcher(stripPrefix(info.toLowerCase)).find()
+        } match {
+          case Some(t) =>
+            prioritizedBounceList.remove(t)
+            prioritizedBounceList.add(t.copy(_2 = t._2 + 1L))
+            if (t._1 == "soft")
+              (0, t._4)
+            else
+              (1, t._4)
+          case None =>
+            (2, "unable to decide on type of bounce")
         }
-      }
     }
   }
 
