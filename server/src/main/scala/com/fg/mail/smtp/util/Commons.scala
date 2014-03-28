@@ -20,7 +20,7 @@ object Commons {
   def digestFirstLine(file: File): String = {
     val source = getSource(file)
     try {
-      val it = source.getLines()
+      val it = source.getLines().take(1)
       require(it.hasNext, s"md5 digesting of the first line of file $file expect it not to be empty !")
       digest(it.next())
     } finally {
@@ -46,7 +46,12 @@ object Commons {
   }
 
 
-  def getSource(file: File): Source = if (file.getName.endsWith(".gz")) Source.fromInputStream(gunzipFileSafely(file)) else Source.fromFile(file)
+  def getSource(file: File): Source =
+    if (file.getName.endsWith(".gz")) {
+      val is = gunzipFileSafely(file)
+      Source.createBufferedSource(is, 32768, reset = () => Source.fromInputStream(is), close = () => is.close())
+    } else
+      Source.fromFile(file)
 
   def gunzipFileSafely(file: File): InputStream = {
 
@@ -57,7 +62,7 @@ object Commons {
 
     var in: InputStream = null
     try {
-      in = new GZIPInputStream(new FileInputStream(file))
+      in = new GZIPInputStream(new FileInputStream(file), 32768)
     } catch {
       case fnf: FileNotFoundException =>
         throwAndClose(s"Unable to find file ${file.getAbsolutePath}", fnf, in)
@@ -68,4 +73,33 @@ object Commons {
     }
     in
   }
+
+  def buildTable(header: List[Any], rows: List[List[Any]]) = {
+
+    def formatRows(rowSeparator: String, rows: Seq[String]): String = (
+      rowSeparator ::
+        rows.head ::
+        rowSeparator ::
+        rows.tail.toList :::
+        rowSeparator ::
+        List()).mkString("\n")
+
+    def formatRow(row: Seq[Any], colSizes: Seq[Int]) = {
+      val cells = for ((item, size) <- row.zip(colSizes)) yield if (size == 0) "" else ("%" + size + "s").format(item)
+      cells.mkString("|", "|", "|")
+    }
+
+    def rowSeparator(colSizes: Seq[Int]) = colSizes map { "-" * _ } mkString("+", "+", "+")
+
+    val table = List(header) ::: rows
+    table match {
+      case Seq() => ""
+      case _ =>
+        val sizes = for (row <- table) yield for (cell <- row) yield if (cell == null) 0 else cell.toString.length
+        val colSizes = for (col <- sizes.transpose) yield col.max
+        val rows = for (row <- table) yield formatRow(row, colSizes)
+        formatRows(rowSeparator(colSizes), rows)
+    }
+  }
+
 }

@@ -8,7 +8,6 @@ import java.util.concurrent._
 import scala._
 import com.fg.mail.smtp.parser.BounceListParser
 import com.fg.mail.smtp.index._
-import scala.collection.mutable.ListMap
 import scala.util.matching.Regex
 import com.fg.mail.smtp.util.{ParsingUtils, Profilable, Commons}
 import com.fg.mail.smtp.notification.MailClient
@@ -119,10 +118,11 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
           context.parent ! ParsingBackupFinished
 
           log.info(
-            prioritizedBounceList.foldLeft(new StringBuffer("How many error messages were classified into categories :\n")) {
-              case (sb, t@(prioritizedOrder, defaultOrder, bounceType, bounceCategory, regex)) =>
-                sb.append("\t" + prioritizedOrder + " : " + bounceType + " : " + bounceCategory + "\n")
-            }.toString
+            "Prioritized bounce list - how many times and in what order bounce messages were classified  :\n" +
+            Commons.buildTable(
+              List("type", "prioritized order", "default order", "category"),
+              prioritizedBounceList.toList.map( t => (t._1, t._2, t._3, t._4).productIterator.toList)
+            )
           )
 
           logResultString
