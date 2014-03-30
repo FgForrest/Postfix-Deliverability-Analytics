@@ -1,24 +1,26 @@
 #!/bin/bash
 
-AUTH=$2
-
-if [ -z "$AUTH" ]
-then
-	echo
-	echo "    *** Please specify http authentication 'username:password ***    "
-	echo
-    echo "        control.sh (start|stop|restart|reindex|refreshBouncelist|unknownBounces|status) admin:1234    "
-    echo
-    exit
-fi
+CURL_BASE="curl http://127.0.0.1:1523"
+CURL_BASE_HEADERS="curl -D - http://127.0.0.1:1523"
+W_TIMEOUT=10;
+PID_REGEX="^[0-9]+$"
+START_SCRIPT="./start.sh"
 
 if [ -z "$JAVA_HOME" ] ; then
     export JAVA_HOME="/www/server/java/jdk"
 fi
 
-W_TIMEOUT=10;
-PID_REGEX="^[0-9]+$"
-START_SCRIPT="./start.sh"
+if [[ -n "$1" ]] && [[ "$1" != "start" ]] && [[ -z "$2" ]] && [[ `curl -sI http://127.0.0.1:1523 | tr -d '\r' | sed -En 's/^HTTP\/1\.1 (.*)/\1/p'` == "401 Unauthorized" ]]
+then
+   echo "    !!! Http server requires authentication, provide 'username:password' as last script argument !!!    "
+   exit
+fi
+
+if [ -n "$2" ]
+then
+    CURL_BASE="curl -u $2 http://127.0.0.1:1523"
+fi
+
 
 function startDaemon () {
   DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
@@ -33,7 +35,7 @@ function startDaemon () {
 function getStatus () {
   STATUS=0;
   DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
-  AGSTATUS=`curl -u $AUTH http://127.0.0.1:1523/agent-status 2>/dev/null`
+  AGSTATUS=`${CURL_BASE}/agent-status 2>/dev/null`
   if [ $? == 0 ]; then
     echo "Application running with PID=$DPID and status:"
     echo "$AGSTATUS";
@@ -49,9 +51,9 @@ function getStatus () {
 function getUnknownBounces () {
   STATUS=0;
   DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
-  AGSTATUS=`curl -u $AUTH http://127.0.0.1:1523/agent-status/unknown-bounces 2>/dev/null`
+  AGSTATUS=`${CURL_BASE}/agent-status/unknown-bounces 2>/dev/null`
   if [ $? == 0 ]; then
-    echo "Mail Agent running with PID=$DPID and status:"
+    echo "Application running with PID=$DPID and status:"
     echo "$AGSTATUS";
   elif [ "$DPID" != "" ]; then
     echo "Application running with PID=$DPID but not responding to getUnknownBounces command."
@@ -66,8 +68,8 @@ function restart () {
   STATUS=0;
   DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
   if [ $? == 0 ] && [[ "$DPID" =~ $PID_REGEX ]]; then
-    AGSTATUS=`curl -u $AUTH http://127.0.0.1:1523/agent-restart 2>/dev/null`
-    echo "Mail Agent is being restarted with PID=$DPID and status:"
+    AGSTATUS=`${CURL_BASE}/agent-restart 2>/dev/null`
+    echo "Application is being restarted with PID=$DPID and status:"
     echo "$AGSTATUS";
   elif [ -z "$DPID" ]; then
     echo "Application is not running. Starting now..."
@@ -82,12 +84,12 @@ function restart () {
 function reindex () {
   STATUS=0;
   DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
-  AGSTATUS=`curl -u $AUTH http://127.0.0.1:1523/agent-reindex 2>/dev/null`
+  AGSTATUS=`${CURL_BASE}/agent-reindex 2>/dev/null`
   if [ $? == 0 ]; then
     echo "Application running with PID=$DPID and status:"
     echo "$AGSTATUS";
   elif [ "$DPID" != "" ]; then
-    echo "Mail Agent running with PID=$DPID but not responding to reindex command."
+    echo "Application running with PID=$DPID but not responding to reindex command."
   else
     echo "Application is not running."
   fi
@@ -98,9 +100,9 @@ function reindex () {
 function refreshBouncelist () {
   STATUS=0;
   DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
-  AGSTATUS=`curl -u $AUTH http://127.0.0.1:1523/agent-refresh-bouncelist 2>/dev/null`
+  AGSTATUS=`${CURL_BASE}/agent-refresh-bouncelist 2>/dev/null`
   if [ $? == 0 ]; then
-    echo "Mail Agent running with PID=$DPID and status:"
+    echo "Application running with PID=$DPID and status:"
     echo "$AGSTATUS";
   elif [ "$DPID" != "" ]; then
     echo "Application running with PID=$DPID but not responding to refreshBouncelist command."
@@ -112,9 +114,9 @@ function refreshBouncelist () {
 }
 
 function stopDaemon () {
-  AGSTOP=`curl -u $AUTH http://127.0.0.1:1523/agent-shutdown 2>/dev/null`
+  AGSTOP=`${CURL_BASE}/agent-shutdown 2>/dev/null`
   if [ $? == 0 ]; then
-    echo "Trying to stop Mail Agent with agent-shutdown command."
+    echo "Trying to stop Application with agent-shutdown command."
     echo "Waiting ${W_TIMEOUT}s before kill."
     sleep $W_TIMEOUT;
   fi
@@ -151,7 +153,7 @@ case "$1" in
                 ;;
         *)
                 cat <<EOF
-Usage: $0 (start|stop|restart|reindex|refreshBouncelist|unknownBounces|status)
+Usage: $0 (start|stop|restart|reindex|refreshBouncelist|unknownBounces|status) [user:password]
   start              Start app
   stop               Stop app
   restart            Restart app (for restarting http server, reloading configuration, refreshing bounce list and reindexing)

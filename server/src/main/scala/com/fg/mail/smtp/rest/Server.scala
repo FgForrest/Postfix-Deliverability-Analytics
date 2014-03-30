@@ -26,7 +26,10 @@ class Server(indexer: ActorRef, counter: ActorRef, o: Options) extends Actor wit
         context.system.shutdown()
       case Right(s) =>
         s.setExecutor(executorService)
-        s.createContext("/", new Handler(indexer, counter, o)).setAuthenticator(new SmtpAgentBasicHttpAuthenticator(o))
+        val ctx = s.createContext("/", new Handler(indexer, counter, o))
+        if (!o.httpServerAuth.isEmpty){
+          ctx.setAuthenticator(new SmtpAgentBasicHttpAuthenticator(o))
+        }
         server = s
     }
   }

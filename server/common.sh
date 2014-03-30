@@ -12,7 +12,7 @@ function stop () {
     DPID=`ps aux 2>/dev/null | grep "[c]om.fg.mail.smtp.Agent" 2>/dev/null | awk '{ print $2 }' 2>/dev/null`
     if [[ "$DPID" =~ $PID_REGEX ]]; then
         echo "Application is running with PID=$DPID"
-        AGSTATUS=`curl -u $http_auth http://127.0.0.1:1523/agent-shutdown 2>/dev/null`
+        AGSTATUS=`curl -u ${http_auth} http://127.0.0.1:1523/agent-shutdown 2>/dev/null`
         echo "Application shut down with status:"
         echo "$AGSTATUS";
         echo "Waiting ${kill_timeout}s before kill."
@@ -39,7 +39,7 @@ function start () {
 
     cd "${deploy_path}/${distribution_name}/bin"
     echo "*** Starting application ***";
-    /bin/bash ./control.sh start $http_auth
+    /bin/bash ./control.sh start ${http_auth}
     sleep 1
     cd ${deploy_log_path}
     tail -f $(ls -1t | head -1)
