@@ -19,22 +19,22 @@ class Controller(serverInfoService: ServerInfoService, o: Options) {
   val url = s"http://${o.hostName}:${o.httpServerPort}/"
 
   val actionHrefs = ListMap(
-      "Vypnout"                                                                                       -> "agent-shutdown",
-      "Restartovat (restart http serveru, reload konfigurace, refresh bounce listu, reindexace logů)" -> "agent-restart",
-      "Reindexovat (refresh bounce listu, reindexace logů)"                                           -> "agent-reindex",
-      "Refresh bounce list (refresh seznamu regexů pro kategorizaci bounců)"                          -> "agent-refresh-bouncelist"
+      "Shutdown"                                                                                      -> "agent-shutdown",
+      "Restart (restart http server, reload configuration, refresh bounce list, reindex logs)"        -> "agent-restart",
+      "Reindex (refresh bounce list, reindex logs)"                                                   -> "agent-reindex",
+      "Refresh bounce list"                                                                           -> "agent-refresh-bouncelist"
   ).mapValues(url + _)
 
   val readHrefs = ListMap(
-      "Status indexování (pouze od posledního startu)"                                                -> "agent-status",
-      "Celkový počet emailových adres příjemců"                                                       -> "agent-status/rcpt-address-counts",
-      "Emailové adresy příjemců"                                                                      -> "agent-status/rcpt-addresses",
-      "Nekategorizované bounce záznamy"                                                               -> "agent-status/unknown-bounces",
-      "Spotřeba paměti jvm (zobrazí podrobné informace o využití RAM)"                                -> "agent-status/memory-usage",
-      "Velikost indexu a fronty"                                                                      -> "agent-status/index-memory-footprint",
-      "Naindexované log soubory"                                                                      -> "agent-status/indexed-log-files",
-      "Informace o prostředí (paměť, vlákna, GC, proměnné)"                                           -> "agent-status/server-info",
-      "Podrobnější dotazování"                                                                        -> "agent-read"
+      "Index status (since last start only)"                                                          -> "agent-status",
+      "Total count of recipient email addresses"                                                      -> "agent-status/rcpt-address-counts",
+      "Recipient email addresses"                                                                     -> "agent-status/rcpt-addresses",
+      "Unclassified bounce messages"                                                                  -> "agent-status/unknown-bounces",
+      "Memory info (RAM usage)"                                                                       -> "agent-status/memory-usage",
+      "Index and queue size"                                                                          -> "agent-status/index-memory-footprint",
+      "Indexed log files"                                                                             -> "agent-status/indexed-log-files",
+      "Environment info (memory, threads, GC, variables)"                                             -> "agent-status/server-info",
+      "Querying"                                                                                      -> "agent-read"
   ).mapValues(url + _)
 
   def dispatch(req: View, index: Index): String = req match {
@@ -53,8 +53,8 @@ class Controller(serverInfoService: ServerInfoService, o: Options) {
           <body>
             {for (clientId <- index.getClientIds) yield
             <form action={"agent-read/" + clientId} method="get">
-              <input type="submit" value={"Query " + clientId + "client id"}/><div>setřídit podle :</div>
-              <input type="radio" name="groupBy" value="rcptEmail"/>emailové adresy příjemce
+              <input type="submit" value={"Query " + clientId + "client id"}/><div>order by :</div>
+              <input type="radio" name="groupBy" value="rcptEmail"/>recipient email address
               <input type="radio" name="groupBy" value="msgId"/>message id
               <input type="radio" name="groupBy" value="queueId"/>queue id
             </form>
