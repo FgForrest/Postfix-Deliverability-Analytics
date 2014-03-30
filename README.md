@@ -127,3 +127,10 @@ PDA setting
 -----
 
 All PDA settings are available in [application.conf](https://github.com/FgForrest/Postfix-Deliverability-Analytics/blob/master/server/src/main/resources/application.conf)
+
+
+Bounce classification by regular expressions
+------
+
+Considering the fact that individual email services make up their own error messages and reasons why email can not be delivered, there is no easy way to classify them. [bounce-regex-list.xml](https://github.com/FgForrest/Postfix-Deliverability-Analytics/blob/master/server/src/main/resources/bounce-regex-list.xml) groups regular expressions into a several categories to match every error message encountered at log file in order to classify it as a soft or hard bounce and to find general reason for it's nondelivery.
+After some time you can check unclassified bounces in UI [http://localhost:1523/](http://localhost:1523/) under 'Unclassified bounce messages' or [http://localhost:1523/agent-status/unknown-bounces](http://localhost:1523/agent-status/unknown-bounces). There is a list of clients, each might contain a list of bounced messages that were not classified, value of 'info' property is the actual error message that was not possible to classify using bounce-regex-list. You need to edit file bounce-regex-list.xml (it's location depends on application.conf settings), add or change some regular expression so that next time this kind of error will be classified. 'Refresh bounce list' command reloads bounce-regex-list.xml that you edited. Significant amount of bounces might mean that there is something wrong with your postfix settings or mx records
