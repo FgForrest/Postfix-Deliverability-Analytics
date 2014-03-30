@@ -35,6 +35,7 @@ import com.fg.mail.smtp.stats.CountIndexedMidLine
 import com.fg.mail.smtp.ClientLine
 import com.fg.mail.smtp.ShutSystemDown
 import com.fg.mail.smtp.IndexBackupRecords
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * An akka actor tailing smtp log file. It is sending incoming log lines to Indexer actor for them to be indexed.
@@ -120,7 +121,7 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
           log.info(
             "Prioritized bounce list - how many times and in what order bounce messages were classified  :\n" +
             Commons.buildTable(
-              List("type", "prioritized order", "default order", "category"),
+              List("type", "hit count", "default order (1 is the last)", "category"),
               prioritizedBounceList.toList.map( t => (t._1, t._2, t._3, t._4).productIterator.toList)
             )
           )
@@ -193,15 +194,16 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
     def indexLogFile(queue: Queue, file: File, digest: String, isLast: Boolean, fromTailing: Boolean) {
       val source = Commons.getSource(file)
       try {
-        val remaining = source.getLines().foldLeft( List[ClientIndexRecord]() )( ( acc: List[ClientIndexRecord], line: String ) => {
+        val remaining = source.getLines().foldLeft(new ArrayBuffer[ClientIndexRecord](o.indexBatchSize))( (acc, line) => {
           recognizeLine(line).fold(acc) {
-            (l: Line) => parseLine(l, fromTailing, queue).fold(acc) { (c: ClientIndexRecord) =>
-              if (acc.size < o.indexBatchSize) {
-                acc :+ c
-              } else {
-                batchCallback(acc :+ c, file, None, isLast)
-                List[ClientIndexRecord]()
-              }
+            parseLine(_, fromTailing, queue).fold(acc) {
+              record =>
+                if (acc.size < o.indexBatchSize) {
+                  acc :+ record
+                } else {
+                  batchCallback(acc :+ record, file, None, isLast)
+                  new ArrayBuffer(o.indexBatchSize)
+                }
             }
           }
         })
