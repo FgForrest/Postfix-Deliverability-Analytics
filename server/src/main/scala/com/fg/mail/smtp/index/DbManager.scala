@@ -26,6 +26,7 @@ class DbManager(val o: Options) extends Profilable {
                       .newFileDB(new File(o.dbDir + "/" + o.dbName))
                       .mmapFileEnablePartial()
                       .syncOnCommitDisable()
+                      .asyncWriteFlushDelay(5000)
                       .closeOnJvmShutdown()
                       .freeSpaceReclaimQ(3)
     if (!o.dbAuth.isEmpty)
