@@ -3,7 +3,7 @@
     <artifactId>parent</artifactId>
     <groupId>com.fg.pda</groupId>
     <packaging>pom</packaging>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <name>Postfix Deliverability Analytics Suite</name>
     <modules>
         <module>client</module>
@@ -23,7 +23,7 @@
         <connection>scm:git:git@github.com:FgForrest/Postfix-Deliverability-Analytics.git</connection>
         <url>scm:git:git@github.com:FgForrest/Postfix-Deliverability-Analytics.git</url>
         <developerConnection>scm:git:git@github.com:FgForrest/Postfix-Deliverability-Analytics.git</developerConnection>
-      <tag>v1.0</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <distributionManagement>

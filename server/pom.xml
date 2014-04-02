@@ -17,7 +17,7 @@
     <parent>
         <groupId>com.fg.pda</groupId>
         <artifactId>parent</artifactId>
-        <version>1.0</version>
+        <version>1.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -206,7 +206,7 @@
         <dependency>
             <groupId>com.fg.pda</groupId>
             <artifactId>client</artifactId>
-            <version>1.0</version>
+            <version>1.1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
         <dependency>
