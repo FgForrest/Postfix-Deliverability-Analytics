@@ -58,7 +58,7 @@ class IntegrationSuite extends TestSupport {
     describe("UI") {
 
       it("HomePage") {
-        client.getJsonHttpClient.resolveWithoutDeserialization(new AgentReq(new AppendablePath(""), null)) should include ("Vypnout")
+        client.getJsonHttpClient.resolveWithoutDeserialization(new AgentReq(new AppendablePath(""), null)) should include ("Shutdown")
       }
 
     }
