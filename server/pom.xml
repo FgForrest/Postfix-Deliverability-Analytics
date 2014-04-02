@@ -4,12 +4,6 @@
     <artifactId>server</artifactId>
     <name>Postfix Deliverability Analytics Server</name>
     <description>Server application for providing mail clients with feedback</description>
-    
-    <scm>
-        <connection>scm:git:git://github.com/FgForrest/Postfix-Deliverability-Analytics.git</connection>
-        <developerConnection>scm:git:git://github.com/FgForrest/Postfix-Deliverability-Analytics.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
 
     <developers>
         <developer>

@@ -20,10 +20,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:ssh://git@git.fg.cz/p_fg/edeecms</connection>
-        <developerConnection>scm:git:ssh://git@git.fg.cz/p_fg/edeecms</developerConnection>
-        <url>http://dev.edee-cms.cz/</url>
-        <tag>HEAD</tag>
+        <connection>scm:git:git@github.com:FgForrest/Postfix-Deliverability-Analytics.git</connection>
+        <url>scm:git:git@github.com:FgForrest/Postfix-Deliverability-Analytics.git</url>
+        <developerConnection>scm:git:git@github.com:FgForrest/Postfix-Deliverability-Analytics.git</developerConnection>
     </scm>
 
     <distributionManagement>
@@ -39,4 +38,13 @@
         </snapshotRepository>
     </distributionManagement>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5</version>
+            </plugin>
+        </plugins>
+    </build>
 </project>
