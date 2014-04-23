@@ -6,9 +6,7 @@ import scala.concurrent.Await
 import com.fg.mail.smtp._
 import akka.pattern.ask
 
-import scala.Some
 import com.fg.mail.smtp.stats.{GetCountStatus, LastIndexingStatus}
-import scala.util.{Failure, Success}
 
 /**
  *
@@ -16,8 +14,6 @@ import scala.util.{Failure, Success}
  * @version $Id: 6/24/13 2:34 PM u_jli Exp $
  */
 class TailSuite extends TestSupport with BeforeAndAfter {
-
-  import system.dispatcher
 
   val opt = loadOptions("application-test.conf").copy(
                   httpServerStart = false,
@@ -94,15 +90,6 @@ class TailSuite extends TestSupport with BeforeAndAfter {
         out.append(s)
         out.flush()
         out.close()
-        sleepFor(120)
-        Await.result(counter ? GetCountStatus(rc), timeout.duration).asInstanceOf[Option[LastIndexingStatus]] match {
-          case Some(status) => counter ? GetCountStatus onComplete {
-            case Success(Some(response: LastIndexingStatus)) => assert(response.messageIdMessagesIndexedFromBackup === expectedCount)
-            case Failure(e) => fail(e)
-            case _ => fail("response must be of type")
-          }
-          case _ => fail("StatusAgent should always return stuff")
-        }
       }
 
       testLine(msgIdLine, 1)

@@ -5,6 +5,7 @@ import akka.actor._
 import com.fg.mail.smtp.notification.MailClient
 import com.fg.mail.smtp.index.{DbManager, Indexer}
 import com.fg.mail.smtp.stats.ProfilingCounter
+import akka.event.LoggingReceive
 
 
 /**
@@ -16,10 +17,12 @@ import com.fg.mail.smtp.stats.ProfilingCounter
  */
 class Supervisor(o: Options, dbManager: DbManager) extends Actor with ActorLogging {
 
+  var indexer: ActorRef = _
+
   override def preStart() {
     log.info(" is starting")
     val counter = context.actorOf(Props(new ProfilingCounter), "counter")
-    context.actorOf(Props(new Indexer(counter, new DbManager(o), o)).withMailbox("bounded-deque-based"), "indexer")
+    indexer = context.actorOf(Props(new Indexer(counter, new DbManager(o), o)).withMailbox("bounded-deque-based"), "indexer")
   }
 
   override def postStop() {
@@ -27,12 +30,14 @@ class Supervisor(o: Options, dbManager: DbManager) extends Actor with ActorLoggi
     dbManager.close()
   }
 
-  override def receive = {
+  override def receive = LoggingReceive {
 
     case ShutSystemDown(why, ex) =>
       MailClient.fail(why, ex, o)
       context.system.shutdown()
 
+    case GetIndexer =>
+      sender ! indexer
   }
 
 }

@@ -48,8 +48,11 @@ sealed trait Message
 case class ShutSystemDown(why: String, ex: Option[Throwable] = None) extends Message
 case class RestartSystem(why: String, ex: Option[Throwable] = None) extends Message
 case object StartHttpServer extends Message
+case object GetIndexer extends Message
 
 sealed trait Indexing
+case object GetTailer extends Message with Indexing
+case object GetCouter extends Message with Indexing
 case class RestartIndexer(why: String, ex: Option[Throwable] = None) extends Message with Indexing
 case object ParsingBackupFinished extends Message with Indexing
 case class IndexTailedRecords(records: Iterable[ClientIndexRecord]) extends Message with Indexing

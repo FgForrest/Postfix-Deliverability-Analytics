@@ -3,7 +3,7 @@ package com.fg.mail.smtp.tail
 import akka.actor._
 import java.io._
 import com.fg.mail.smtp._
-import scala.concurrent.{ExecutionContext, future}
+import scala.concurrent.{Future, ExecutionContext}
 import java.util.concurrent._
 import scala._
 import com.fg.mail.smtp.parser.BounceListParser
@@ -94,7 +94,7 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
     case msg: Tailing => msg match {
 
       case ReadLines(reader, batchSize) =>
-        future {
+        Future {
           Option(List.fill(batchSize){reader.readLine})
         } onComplete {
           case Success(Some(lines)) =>

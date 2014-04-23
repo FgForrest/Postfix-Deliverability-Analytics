@@ -15,7 +15,7 @@ trait AutoCleanUpPersistence extends DbManager {
                     .newFileDB(new File(o.dbDir + "/" + o.dbName))
                     .asyncWriteEnable()
                     .mmapFileEnablePartial()
-                    .syncOnCommitDisable()
+                    .commitFileSyncDisable()
                     .deleteFilesAfterClose()
     if (!o.dbAuth.isEmpty)
       dbMaker.encryptionEnable(o.dbAuth)
@@ -23,7 +23,7 @@ trait AutoCleanUpPersistence extends DbManager {
   }
 
   override lazy val queueDb = DBMaker.newFileDB(new File(o.dbDir + "/queue"))
-    .syncOnCommitDisable()
+    .commitFileSyncDisable()
     .deleteFilesAfterClose()
     .make()
 

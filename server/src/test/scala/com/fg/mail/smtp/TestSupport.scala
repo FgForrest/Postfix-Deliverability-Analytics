@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.{Date, Locale}
 import com.typesafe.config.ConfigFactory
 import java.io.File
-import akka.actor.{ActorSelection, Props, ActorSystem}
+import akka.actor.{ActorRef, Props, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.{Matchers, BeforeAndAfterAll, FunSpecLike}
 import scala.concurrent.Await
@@ -23,9 +23,10 @@ abstract class TestSupport(_system: ActorSystem) extends TestKit(_system) with I
   def this() = this(ActorSystem("agent"))
 
   val opt: Options
-  var indexer: ActorSelection = _
-  var counter: ActorSelection = _
-  var tailer: ActorSelection = _
+  var supervisor: ActorRef = _
+  var indexer: ActorRef = _
+  var counter: ActorRef = _
+  var tailer: ActorRef = _
 
   lazy implicit val timeout = opt.askTimeout
   lazy implicit val rc = new ReqCtx(Map[String, String]("client-version" -> "123", "User-Agent" -> "test"))
@@ -33,10 +34,10 @@ abstract class TestSupport(_system: ActorSystem) extends TestKit(_system) with I
   def providePersistence: DbManager = new DbManager(opt) with AutoCleanUpPersistence
 
   override def beforeAll() {
-    system.actorOf(Props(new Supervisor(opt, providePersistence)), "supervisor")
-    indexer = system.actorSelection("akka://agent/user/supervisor/indexer")
-    counter = system.actorSelection("akka://agent/user/supervisor/counter")
-    tailer = system.actorSelection("akka://agent/user/supervisor/indexer/tailer")
+    supervisor = system.actorOf(Props(new Supervisor(opt, providePersistence)), "supervisor")
+    indexer = Await.result(supervisor ? GetIndexer, timeout.duration).asInstanceOf[ActorRef]
+    counter = Await.result(indexer ? GetCouter, timeout.duration).asInstanceOf[ActorRef]
+    tailer  = Await.result(indexer ? GetTailer, timeout.duration).asInstanceOf[ActorRef]
     val index = Await.result(indexer ? GetDisposableRecordsByClientId(rc), timeout.duration)
     assert(index != null)
   }

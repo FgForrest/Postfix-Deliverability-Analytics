@@ -36,6 +36,7 @@ import com.fg.mail.smtp.IndexBackupRecords
 import com.fg.mail.smtp.RcptAddressCounts
 import com.fg.mail.smtp.ReindexAgent
 import scala.collection.immutable.HashSet
+import akka.event.LoggingReceive
 
 /**
  * An Akka actor responsible for indexing back up log files and listening to Tailer actor for upcoming log entries to be indexed
@@ -49,7 +50,7 @@ class Indexer(counter: ActorRef, dbManager: DbManager, val o: Options) extends A
   val multipleGroupingRegex = """([a-zA-z]{2,10})-and-([a-zA-z]{2,10})""".r
   val serverInfoService: ServerInfoService = new ServerInfoService(o)
   val controller: Controller = new Controller(serverInfoService, o)
-  var tailer: ActorRef = _
+  var tailer: ActorRef = context.system.deadLetters
   var index: Index = _
   var digestor: Digestor = _
 
@@ -71,7 +72,7 @@ class Indexer(counter: ActorRef, dbManager: DbManager, val o: Options) extends A
 
   def receive = indexing orElse stashing
 
-  def indexing: Receive = {
+  def indexing: Receive = LoggingReceive {
     case m: Indexing => m match {
 
       case IndexTailedRecords(records) =>
@@ -101,10 +102,11 @@ class Indexer(counter: ActorRef, dbManager: DbManager, val o: Options) extends A
         log.info("Indexing of current log file finished, tailing initialized")
         if (o.httpServerStart) {
           log.info("Creating http server...")
-          context.actorOf(Props(new Server(self, counter, o)), "server")
-          context.child("server").get ! StartHttpServer
+          val httpServer = context.actorOf(Props(new Server(self, counter, o)), "server")
+          httpServer ! StartHttpServer
         }
         context.become(combining)
+        log.debug("Unstashing messages")
         unstashAll()
         log.info("Committing db transaction")
         dbManager.commit()
@@ -113,6 +115,12 @@ class Indexer(counter: ActorRef, dbManager: DbManager, val o: Options) extends A
         log.info(s"Log file successfully rotated")
         digestor.store(new File(o.logDir + o.rotatedFileName))
         dbManager.commit()
+
+      case GetTailer =>
+        sender ! tailer
+
+      case GetCouter =>
+        sender ! counter
 
       case RestartIndexer(why, ex) =>
         ex match {
@@ -128,7 +136,7 @@ class Indexer(counter: ActorRef, dbManager: DbManager, val o: Options) extends A
     }
   }
 
-  def requesting: Receive = {
+  def requesting: Receive = LoggingReceive {
     case r: Request => r match {
 
       case c@Client(filter, q) =>
@@ -191,7 +199,7 @@ class Indexer(counter: ActorRef, dbManager: DbManager, val o: Options) extends A
 
   def combining: Receive = indexing orElse requesting
 
-  def stashing: Receive = {
+  def stashing: Receive = LoggingReceive {
     case _ =>
       stash()
   }

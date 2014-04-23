@@ -5,7 +5,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import com.fg.mail.smtp.index.{DbManager, IndexRecord, QueueRecord}
 import java.io.File
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorRef, Props, ActorSystem}
 import scala.collection.IterableView
 import com.fg.mail.smtp.stats.{GetCountStatus, LastIndexingStatus}
 
@@ -37,9 +37,12 @@ class StressSuite extends TestSupport {
 
         indexer ! RestartIndexer("OK")
 
+        indexer = Await.result(supervisor ? GetIndexer, timeout.duration).asInstanceOf[ActorRef]
+        counter = Await.result(indexer ? GetCouter, timeout.duration).asInstanceOf[ActorRef]
+        tailer  = Await.result(indexer ? GetTailer, timeout.duration).asInstanceOf[ActorRef]
         val afterIndex = Await.result(indexer ? GetDisposableRecordsByClientId(rc), timeout.duration).asInstanceOf[Option[Map[String, IterableView[IndexRecord, Iterable[IndexRecord]]]]].get.map { case (k, v) => (k, v.force) }
-        val afterQueue = Await.result(tailer ? GetQueue(rc), timeout.duration).asInstanceOf[Option[Map[String, QueueRecord]]].get
         val afterStatus = Await.result(counter ? GetCountStatus(rc), timeout.duration).asInstanceOf[Option[LastIndexingStatus]].get
+        val afterQueue = Await.result(tailer ? GetQueue(rc), timeout.duration).asInstanceOf[Option[Map[String, QueueRecord]]].get
 
         assert(beforeIndex.equals(afterIndex))
         assert(beforeQueue.equals(afterQueue))
@@ -57,10 +60,10 @@ class StressSuite extends TestSupport {
         indexer ! ShutdownAgent(rc)
         system.awaitTermination(Duration.create(2, "s"))
         val newSystem = ActorSystem("newName")
-        newSystem.actorOf(Props(new Supervisor(opt, new DbManager(opt))), "supervisor")
-        val newIndexer = newSystem.actorSelection("akka://newName/user/supervisor/indexer")
-        val newTailer = newSystem.actorSelection("akka://newName/user/supervisor/indexer/tailer")
-        val newCounter = newSystem.actorSelection("akka://newName/user/supervisor/counter")
+        val supervisor = newSystem.actorOf(Props(new  Supervisor(opt, new DbManager(opt))), "supervisor")
+        val newIndexer = Await.result(supervisor ? GetIndexer, timeout.duration).asInstanceOf[ActorRef]
+        val newTailer = Await.result(newIndexer ? GetTailer, timeout.duration).asInstanceOf[ActorRef]
+        val newCounter = Await.result(newIndexer ? GetCouter, timeout.duration).asInstanceOf[ActorRef]
 
         val afterIndex = Await.result(newIndexer ? GetDisposableRecordsByClientId(rc), timeout.duration).asInstanceOf[Option[Map[String, IterableView[IndexRecord, Iterable[IndexRecord]]]]].get.map { case (k, v) => (k, v.force) }
         val afterQueue = Await.result(newTailer ? GetQueue(rc), timeout.duration).asInstanceOf[Option[Map[String, QueueRecord]]].get

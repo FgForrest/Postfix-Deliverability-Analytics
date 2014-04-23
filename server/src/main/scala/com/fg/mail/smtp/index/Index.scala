@@ -165,7 +165,7 @@ case class Interval(from: Option[Long], to: Option[Long])
 
 object Index {
 
-  val serializer = new BTreeKeySerializer.Tuple3KeySerializer[String, Long, IndexRecord](null, null, Serializer.STRING, Serializer.LONG, new IndexRecordSerializer)
+  val serializer = new BTreeKeySerializer.Tuple3KeySerializer[String, java.lang.Long, IndexRecord](null, null, Serializer.STRING, Serializer.LONG, new IndexRecordSerializer)
 
   def apply(db: DB, name: String) = {
     /** Node size 6 proved to be the most optimal value for IndexRecord persistence */

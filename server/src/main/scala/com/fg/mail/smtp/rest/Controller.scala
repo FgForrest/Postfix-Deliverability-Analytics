@@ -16,16 +16,16 @@ import com.fg.mail.smtp.util.ServerInfoService
  */
 class Controller(serverInfoService: ServerInfoService, o: Options) {
 
-  val url = s"http://${o.hostName}:${o.httpServerPort}/"
+  lazy val url = s"http://${o.hostName}:${o.httpServerPort}/"
 
-  val actionHrefs = ListMap(
+  lazy val actionHrefs = ListMap(
       "Shutdown"                                                                                      -> "agent-shutdown",
       "Restart (restart http server, reload configuration, refresh bounce list, reindex logs)"        -> "agent-restart",
       "Reindex (refresh bounce list, reindex logs)"                                                   -> "agent-reindex",
       "Refresh bounce list"                                                                           -> "agent-refresh-bouncelist"
   ).mapValues(url + _)
 
-  val readHrefs = ListMap(
+  lazy val readHrefs = ListMap(
       "Index status (since last start only)"                                                          -> "agent-status",
       "Total count of recipient email addresses"                                                      -> "agent-status/rcpt-address-counts",
       "Recipient email addresses"                                                                     -> "agent-status/rcpt-addresses",
