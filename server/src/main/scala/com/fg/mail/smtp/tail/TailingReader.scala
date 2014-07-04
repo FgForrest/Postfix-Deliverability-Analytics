@@ -223,13 +223,13 @@ class TailingReader(counter: ActorRef, dbManager: DbManager, val o: Options) ext
     if (arbiter.toIndex.isEmpty) {
       log.info("There are no backup files to index...")
       false
+    } else {
+      val indexedFiles = arbiter.toIndexInit.filter(indexFileIfNeeded(_, false))
+      if (indexFileIfNeeded(arbiter.toIndex.last, true))
+        true
+      else
+        !indexedFiles.isEmpty
     }
-
-    val indexedFiles = arbiter.toIndexInit.filter(indexFileIfNeeded(_, false))
-    if (indexFileIfNeeded(arbiter.toIndex.last, true))
-      true
-    else
-      !indexedFiles.isEmpty
   }
 
   var cidCount: Long = 0
